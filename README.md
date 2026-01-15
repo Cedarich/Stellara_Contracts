@@ -1,6 +1,8 @@
-# Stellara AI Smart Contracts
+📜 Stellara AI Smart Contracts (Soroban)
 
-Soroban smart contracts for the Stellara AI Web3 crypto academy on Stellar blockchain.
+Soroban smart contracts powering Stellara AI, a Web3 crypto learning and social trading platform built on the Stellar blockchain. These contracts provide decentralized services for education credentials, social rewards, messaging, and on-chain trading used by the Stellara backend and frontend applications.
+
+This repository is intended for blockchain developers, protocol contributors, and the Stellara platform infrastructure, serving as the trust layer for learning achievements, engagement rewards, user interactions, and decentralized trading features.
 
 ## Overview
 
@@ -148,14 +150,58 @@ export SOROBAN_NETWORK="testnet"
 export SOROBAN_RPC_URL="https://soroban-testnet.stellar.org"
 ```
 
-## Security Considerations
 
+🛠 Build Contracts
+bash
+cargo build --release --target wasm32-unknown-unknown
+Build a single contract:
+
+bash
+cd contracts/trading
+cargo build --release --target wasm32-unknown-unknown
+
+🧪 Testing
+cargo test --all
+Single contract:
+
+bash
+cd contracts/academy
+cargo test
+
+🌐 Network Configuration (Testnet Recommended)
+bash
+stellar config network set testnet https://soroban-testnet.stellar.org
+stellar config set --scope global RPC_URL https://soroban-testnet.stellar.org
+stellar config set --scope global NETWORK_PASSPHRASE "Test SDF Network ; September 2015"
+
+🚀 Deployment (Testnet)
+bash
+Copy code
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/trading_contract.wasm \
+  --source account-name \
+  --network testnet
+  
+## Security Considerations
 - All contracts implement authentication via `require_auth()`
 - Admin functions are protected with address verification
 - Contract storage uses instance storage for state management
 - Consider implementing upgradeable proxy patterns for future updates
 
+  Ecosystem Repositories
+
+🌐 Frontend (Next.js): https://github.com/Dev-shamoo/Stellara_Ai
+⚙ Backend (NestJS): https://github.com/shamoo53/Stellara_Ai_backend
+⭐ Stellar Docs: https://developers.stellar.org/docs/smart-contracts/soroban/
+
 ## Contributing
+🤝 Contributing-
+The first step is to Fork the repository
+then you Create a feature branch
+Commit your changes
+git pull latest changes to avoid conflicts
+Submit a pull request 
+Issues and feature requests are welcome.
 
 When adding new features:
 
@@ -164,13 +210,6 @@ When adding new features:
 3. Update this README with new function documentation
 4. Ensure all tests pass before submitting
 
-## License
 
-MIT License - See LICENSE file for details
 
-## Support
 
-For issues and questions:
-- GitHub Issues: [link to issues]
-- Discord: [link to discord]
-- Docs: [link to documentation]
