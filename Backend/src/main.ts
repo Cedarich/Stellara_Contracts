@@ -1,9 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Configure Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Stellar Event Monitor API')
+    .setDescription('API for monitoring Stellar network events and delivering webhooks')
+    .setVersion('1.0')
+    .addTag('Stellar Monitor')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   const redisIoAdapter = new RedisIoAdapter(app);
   await redisIoAdapter.connectToRedis();
