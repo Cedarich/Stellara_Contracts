@@ -46,6 +46,16 @@ fn set_timestamp(env: &Env, timestamp: u64) {
     env.ledger().set(ledger_info);
 }
 
+#[contract]
+struct TestOracle;
+
+#[contractimpl]
+impl TestOracle {
+    pub fn get_price(_env: Env, _pair: Symbol) -> (i128, u64) {
+        (100, 1000)
+    }
+}
+
 #[test]
 fn test_init_and_getters() {
     let _guard = serial_lock();
@@ -291,4 +301,31 @@ fn test_reject_and_get_proposal_errors() {
 
     let missing = client.try_get_upgrade_proposal(&999);
     assert_eq!(missing, Err(Ok(TradeError::Unauthorized)));
+}
+
+#[test]
+fn test_oracle_refresh_updates_status() {
+    let _guard = serial_lock();
+    let (env, admin, approver, executor, contract_id) = setup_env();
+    let client = UpgradeableTradingContractClient::new(&env, &contract_id);
+    let mut approvers = Vec::new(&env);
+    approvers.push_back(approver);
+    init_contract(&client, &admin, approvers, &executor);
+
+    let oracle_id = env.register_contract(None, TestOracle);
+    let mut oracles = Vec::new(&env);
+    oracles.push_back(oracle_id);
+
+    client.set_oracle_config(&admin, &oracles, &100, &1);
+
+    let pair = Symbol::new(&env, "XLMUSDC");
+    let aggregate = client.refresh_oracle_price(&pair);
+
+    assert_eq!(aggregate.median_price, 100);
+    assert_eq!(aggregate.source_count, 1);
+
+    let status = client.get_oracle_status();
+    assert_eq!(status.last_price, 100);
+    assert_eq!(status.last_source_count, 1);
+    assert_eq!(status.consecutive_failures, 0);
 }

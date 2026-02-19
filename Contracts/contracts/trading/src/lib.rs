@@ -1,9 +1,10 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, symbol_short};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, symbol_short, Vec};
 use shared::fees::{FeeManager, FeeError};
 use shared::governance::{
     GovernanceManager, GovernanceRole, UpgradeProposal,
 };
+use shared::oracle::{OracleAggregate, OracleError, fetch_aggregate_price};
 
 /// Version of this contract implementation
 const CONTRACT_VERSION: u32 = 1;
@@ -34,6 +35,24 @@ pub struct TradeStats {
     pub last_trade_id: u64,
 }
 
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct OracleConfig {
+    pub oracles: Vec<Address>,
+    pub max_staleness: u64,
+    pub min_sources: u32,
+}
+
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct OracleStatus {
+    pub last_pair: Symbol,
+    pub last_price: i128,
+    pub last_updated_at: u64,
+    pub last_source_count: u32,
+    pub consecutive_failures: u32,
+}
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum TradeError {
@@ -41,6 +60,7 @@ pub enum TradeError {
     InvalidAmount = 3002,
     ContractPaused = 3003,
     NotInitialized = 3004,
+    OracleFailure = 3005,
 }
 
 impl From<TradeError> for soroban_sdk::Error {
@@ -108,6 +128,41 @@ impl UpgradeableTradingContract {
         // Store contract version
         let version_key = symbol_short!("ver");
         env.storage().persistent().set(&version_key, &CONTRACT_VERSION);
+
+        Ok(())
+    }
+
+    pub fn set_oracle_config(
+        env: Env,
+        admin: Address,
+        oracles: Vec<Address>,
+        max_staleness: u64,
+        min_sources: u32,
+    ) -> Result<(), TradeError> {
+        admin.require_auth();
+
+        let roles_key = symbol_short!("roles");
+        let roles: soroban_sdk::Map<Address, GovernanceRole> = env
+            .storage()
+            .persistent()
+            .get(&roles_key)
+            .ok_or(TradeError::Unauthorized)?;
+
+        let role = roles
+            .get(admin)
+            .ok_or(TradeError::Unauthorized)?;
+
+        if role != GovernanceRole::Admin {
+            return Err(TradeError::Unauthorized);
+        }
+
+        let config = OracleConfig {
+            oracles,
+            max_staleness,
+            min_sources,
+        };
+        let config_key = symbol_short!("oracle_cfg");
+        env.storage().persistent().set(&config_key, &config);
 
         Ok(())
     }
@@ -205,6 +260,84 @@ impl UpgradeableTradingContract {
                 total_trades: 0,
                 total_volume: 0,
                 last_trade_id: 0,
+            })
+    }
+
+    pub fn refresh_oracle_price(env: Env, pair: Symbol) -> Result<OracleAggregate, TradeError> {
+        let config_key = symbol_short!("oracle_cfg");
+        let config: OracleConfig = env
+            .storage()
+            .persistent()
+            .get(&config_key)
+            .ok_or(TradeError::NotInitialized)?;
+
+        let aggregate =
+            fetch_aggregate_price(&env, &config.oracles, &pair, config.max_staleness, config.min_sources)
+                .map_err(|_| TradeError::OracleFailure)?;
+
+        let status_key = symbol_short!("oracle_status");
+        let mut status: OracleStatus = env
+            .storage()
+            .persistent()
+            .get(&status_key)
+            .unwrap_or(OracleStatus {
+                last_pair: pair.clone(),
+                last_price: 0,
+                last_updated_at: 0,
+                last_source_count: 0,
+                consecutive_failures: 0,
+            });
+
+        status.last_pair = aggregate.pair.clone();
+        status.last_price = aggregate.median_price;
+        status.last_updated_at = env.ledger().timestamp();
+        status.last_source_count = aggregate.source_count;
+        status.consecutive_failures = 0;
+
+        env.storage().persistent().set(&status_key, &status);
+
+        env.events().publish(
+            (symbol_short!("oracle_update"),),
+            (aggregate.pair.clone(), aggregate.median_price, aggregate.source_count),
+        );
+
+        Ok(aggregate)
+    }
+
+    pub fn record_oracle_failure(env: Env, pair: Symbol) {
+        let status_key = symbol_short!("oracle_status");
+        let mut status: OracleStatus = env
+            .storage()
+            .persistent()
+            .get(&status_key)
+            .unwrap_or(OracleStatus {
+                last_pair: pair,
+                last_price: 0,
+                last_updated_at: 0,
+                last_source_count: 0,
+                consecutive_failures: 0,
+            });
+
+        status.consecutive_failures += 1;
+        env.storage().persistent().set(&status_key, &status);
+
+        env.events().publish(
+            (symbol_short!("oracle_failure"),),
+            status.consecutive_failures,
+        );
+    }
+
+    pub fn get_oracle_status(env: Env) -> OracleStatus {
+        let status_key = symbol_short!("oracle_status");
+        env.storage()
+            .persistent()
+            .get(&status_key)
+            .unwrap_or(OracleStatus {
+                last_pair: Symbol::new(&env, "NONE"),
+                last_price: 0,
+                last_updated_at: 0,
+                last_source_count: 0,
+                consecutive_failures: 0,
             })
     }
 
