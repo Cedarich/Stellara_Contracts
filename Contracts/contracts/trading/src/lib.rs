@@ -5,7 +5,7 @@ use shared::governance::{
     GovernanceManager, GovernanceRole, UpgradeProposal,
 };
 use shared::oracle::{OracleAggregate, fetch_aggregate_price};
-use shared::events::{EventEmitter, TradeExecutedEvent};
+use shared::events::{EventEmitter, TradeExecutedEvent, FeeCollectedEvent};
 
 /// Version of this contract implementation
 const CONTRACT_VERSION: u32 = 1;
@@ -389,6 +389,15 @@ impl UpgradeableTradingContract {
             &request.fee_recipient,
             request.fee_amount,
         )?;
+
+        // Emit fee collected event
+        EventEmitter::fee_collected(env, FeeCollectedEvent {
+            payer: request.trader.clone(),
+            recipient: request.fee_recipient.clone(),
+            amount: request.fee_amount,
+            token: request.fee_token.clone(),
+            timestamp: env.ledger().timestamp(),
+        });
 
         // Create trade record
         let trade_id = stats.last_trade_id + 1;
