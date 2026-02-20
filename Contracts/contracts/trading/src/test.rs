@@ -222,7 +222,6 @@ fn test_pause_unpause_authorization() {
 }
 
 #[test]
-#[ignore = "Governance module uses legacy storage - needs migration"]
 fn test_upgrade_proposal_flow_and_errors() {
     let _guard = (); // serial_lock disabled
     let (env, admin, approver, executor, contract_id) = setup_env();
@@ -277,7 +276,6 @@ fn test_upgrade_proposal_flow_and_errors() {
 }
 
 #[test]
-#[ignore = "Governance module uses legacy storage - needs migration"]
 fn test_reject_and_get_proposal_errors() {
     let _guard = (); // serial_lock disabled
     let (env, admin, approver, executor, contract_id) = setup_env();
@@ -301,6 +299,52 @@ fn test_reject_and_get_proposal_errors() {
 
     let missing = client.try_get_upgrade_proposal(&999);
     assert_eq!(missing, Err(Ok(TradeError::Unauthorized)));
+}
+
+#[test]
+fn test_upgrade_governance_pause_and_timelock_validation() {
+    let _guard = ();
+    let (env, admin, approver, executor, contract_id) = setup_env();
+    let client = UpgradeableTradingContractClient::new(&env, &contract_id);
+    let mut approvers = Vec::new(&env);
+    approvers.push_back(approver.clone());
+    init_contract(&client, &admin, approvers.clone(), &executor);
+
+    let invalid_timelock = client.try_propose_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("Upgrade"),
+        &approvers,
+        &1,
+        &3599,
+    );
+    assert_eq!(invalid_timelock, Err(Ok(TradeError::Unauthorized)));
+
+    client.pause_upgrade_governance(&admin);
+
+    let paused_proposal = client.try_propose_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("Upgrade"),
+        &approvers,
+        &1,
+        &3600,
+    );
+    assert_eq!(paused_proposal, Err(Ok(TradeError::Unauthorized)));
+
+    client.resume_upgrade_governance(&admin);
+
+    let proposal_id = client.propose_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("Upgrade"),
+        &approvers,
+        &1,
+        &3600,
+    );
+
+    let proposal = client.get_upgrade_proposal(&proposal_id);
+    assert_eq!(proposal.status, ProposalStatus::Pending);
 }
 
 #[test]
