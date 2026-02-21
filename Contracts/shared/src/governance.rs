@@ -201,16 +201,7 @@ impl GovernanceManager {
             .set(&proposal_counter_key, &next_id);
 
         // Emit proposal created event
-        EventEmitter::proposal_created(env, ProposalCreatedEvent {
-            proposal_id: next_id,
-            proposer: event_proposer,
-            new_contract_hash: event_new_contract_hash,
-            target_contract: event_target_contract,
-            description: event_description,
-            approval_threshold,
-            timelock_delay,
-            timestamp: env.ledger().timestamp(),
-        });
+        EventEmitter::proposal_created(env, event_proposer, next_id, event_description.to_string(), Symbol::new(env, "upgrade"));
 
         Ok(next_id)
     }
@@ -277,13 +268,10 @@ impl GovernanceManager {
         env.storage().persistent().set(&proposals_key, &proposals);
 
         // Emit proposal approved event
-        EventEmitter::proposal_approved(env, ProposalApprovedEvent {
-            proposal_id,
-            approver,
-            current_approvals,
-            threshold,
-            timestamp: env.ledger().timestamp(),
-        });
+        env.events().publish(
+            (Symbol::new(env, "proposal_approved"), approver),
+            (proposal_id, current_approvals, threshold, env.ledger().timestamp()),
+        );
 
         Ok(())
     }
@@ -329,12 +317,7 @@ impl GovernanceManager {
         env.storage().persistent().set(&proposals_key, &proposals);
 
         // Emit proposal executed event
-        EventEmitter::proposal_executed(env, ProposalExecutedEvent {
-            proposal_id,
-            executor,
-            new_contract_hash,
-            timestamp: env.ledger().timestamp(),
-        });
+        EventEmitter::proposal_executed(env, executor, proposal_id, true);
 
         Ok(())
     }
@@ -367,11 +350,10 @@ impl GovernanceManager {
         env.storage().persistent().set(&proposals_key, &proposals);
 
         // Emit proposal rejected event
-        EventEmitter::proposal_rejected(env, ProposalRejectedEvent {
-            proposal_id,
-            rejector,
-            timestamp: env.ledger().timestamp(),
-        });
+        env.events().publish(
+            (Symbol::new(env, "proposal_rejected"), rejector),
+            (proposal_id, env.ledger().timestamp()),
+        );
 
         Ok(())
     }
@@ -404,11 +386,10 @@ impl GovernanceManager {
         env.storage().persistent().set(&proposals_key, &proposals);
 
         // Emit proposal cancelled event
-        EventEmitter::proposal_cancelled(env, ProposalCancelledEvent {
-            proposal_id,
-            cancelled_by: admin,
-            timestamp: env.ledger().timestamp(),
-        });
+        env.events().publish(
+            (Symbol::new(env, "proposal_cancelled"), admin),
+            (proposal_id, env.ledger().timestamp()),
+        );
 
         Ok(())
     }
