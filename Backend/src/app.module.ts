@@ -16,6 +16,7 @@ import { ConfigurationModule } from './config/configuration.module';
 
 import { RedisModule } from './redis/redis.module';
 import { VoiceModule } from './voice/voice.module';
+import { CacheModule } from './cache/cache.module';
 // DatabaseModule removed - using PostgreSQL config in this module instead
 import { StellarMonitorModule } from './stellar-monitor/stellar-monitor.module';
 import { WorkflowModule } from './workflow/workflow.module';
@@ -110,6 +111,7 @@ import { HealthModule } from './health/health.module';
     RedisModule,
     AuthModule,
     VoiceModule,
+    CacheModule,
     StellarMonitorModule,
     WorkflowModule,
     QueueModule,
