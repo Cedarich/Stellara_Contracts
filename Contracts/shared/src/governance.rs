@@ -1,8 +1,5 @@
 use soroban_sdk::{contracttype, Address, Env, Vec, Symbol, symbol_short};
-use crate::events::{
-    EventEmitter, ProposalCreatedEvent, ProposalApprovedEvent, ProposalRejectedEvent,
-    ProposalExecutedEvent, ProposalCancelledEvent,
-};
+use crate::events::EventEmitter;
 
 const MIN_TIMELOCK_SECONDS: u64 = 3600;
 const MAX_TIMELOCK_SECONDS: u64 = 30 * 24 * 60 * 60;
