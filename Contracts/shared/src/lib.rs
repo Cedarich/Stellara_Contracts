@@ -12,7 +12,9 @@ pub struct ContractConfig {
 
 pub mod events;
 pub mod fees;
-pub mod governance;
+pub mod oracle;
+pub mod privacy;
+pub mod storage;
 
 /// Standard contract error codes
 pub mod errors {

@@ -16,16 +16,24 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { RolesDecorator } from '../decorators/roles.decorator';
-import { DistributedRateLimitService, RateLimitIdentifier } from './distributed-rate-limit.service';
-import { RoleBasedRateLimitService, EndpointCategory, UserRole } from './role-based-rate-limit.service';
+import { Roles } from '../decorators/roles.decorator';
+import { Role } from '../auth/roles.enum'; // Use the main Role enum
+import {
+  DistributedRateLimitService,
+  RateLimitIdentifier,
+} from './distributed-rate-limit.service';
+import {
+  RoleBasedRateLimitService,
+  EndpointCategory,
+  UserRole,
+} from './role-based-rate-limit.service';
 import { RateLimitMetricsCollector } from './rate-limit-metrics.collector';
 import { RateLimitConfig } from './rate-limit-strategies';
 
 @ApiTags('Rate Limiting Management')
 @Controller('api/admin/rate-limits')
 @UseGuards(RolesGuard)
-@RolesDecorator([UserRole.ADMIN, UserRole.SYSTEM])
+@Roles(Role.ADMIN, Role.SUPERADMIN) // Use main Role enum values
 export class RateLimitingController {
   constructor(
     private readonly rateLimitService: DistributedRateLimitService,
@@ -161,10 +169,7 @@ export class RateLimitingController {
       path: '/',
     };
 
-    await this.rateLimitService.banIdentifier(
-      identifier,
-      body.durationSeconds,
-    );
+    await this.rateLimitService.banIdentifier(identifier, body.durationSeconds);
 
     return {
       success: true,
@@ -181,7 +186,10 @@ export class RateLimitingController {
     status: 200,
     description: 'Identifier unbanned successfully',
   })
-  async unbanIdentifier(@Param('ip') ip: string, @Query('userId') userId?: string) {
+  async unbanIdentifier(
+    @Param('ip') ip: string,
+    @Query('userId') userId?: string,
+  ) {
     const identifier: RateLimitIdentifier = {
       ip,
       userId,
@@ -205,7 +213,10 @@ export class RateLimitingController {
     status: 200,
     description: 'Rate limit reset successfully',
   })
-  async resetIdentifier(@Param('ip') ip: string, @Query('userId') userId?: string) {
+  async resetIdentifier(
+    @Param('ip') ip: string,
+    @Query('userId') userId?: string,
+  ) {
     const identifier: RateLimitIdentifier = {
       ip,
       userId,
