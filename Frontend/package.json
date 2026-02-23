@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Stellara AI – The Intelligent Web3 Crypto Academy",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
