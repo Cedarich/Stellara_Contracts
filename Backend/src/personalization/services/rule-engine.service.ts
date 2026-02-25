@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PersonalizationRule, RuleStatus } from '../entities/personalization-rule.entity';
 import { UserEvent } from '../entities/user-event.entity';
 

@@ -2,7 +2,6 @@ import { ExperimentService } from './services/experiment.service';
 import { Repository } from 'typeorm';
 import { Experiment, ExperimentStatus } from './entities/experiment.entity';
 import { ExperimentAssignment } from './entities/experiment-assignment.entity';
-import { UserEventType } from './entities/user-event.entity';
 
 describe('ExperimentService', () => {
   let service: ExperimentService;
@@ -77,4 +76,3 @@ describe('ExperimentService', () => {
     expect(control.conversionRate).toBeCloseTo(0.25);
   });
 });
-
