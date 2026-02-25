@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, IsNull } from 'typeorm';
 import { UserEvent, UserEventType } from '../entities/user-event.entity';
 
 type Recommendation = { itemId: string; score: number; reasons: string[] };
@@ -23,14 +23,13 @@ export class RecommendationService {
     const end = new Date();
     const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 
-    const recent = await this.eventRepo.find({
-      where: {
-        userId: params.userId ?? null,
-        timestamp: Between(start, end),
-      },
-      order: { timestamp: 'DESC' },
-      take: 500,
-    });
+    const where: any = { timestamp: Between(start, end) };
+    if (params.userId === null) {
+      where.userId = IsNull();
+    } else if (typeof params.userId === 'string') {
+      where.userId = params.userId;
+    }
+    const recent = await this.eventRepo.find({ where, order: { timestamp: 'DESC' }, take: 500 });
 
     const recentItems = recent
       .filter((e) => e.itemId && [UserEventType.VIEW, UserEventType.CLICK, UserEventType.LIKE, UserEventType.PURCHASE].includes(e.eventType))

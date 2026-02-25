@@ -55,7 +55,7 @@ export class RuleEngineService {
 
   async deleteRule(id: string): Promise<boolean> {
     const res = await this.ruleRepo.delete({ id });
-    return res.affected !== undefined && res.affected > 0;
+    return (res.affected ?? 0) > 0;
   }
 
   async evaluate(context: EvaluationContext): Promise<any[]> {
