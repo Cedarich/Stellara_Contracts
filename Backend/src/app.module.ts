@@ -18,6 +18,8 @@ import { WorkflowModule } from './workflow/workflow.module';
 import { QueueModule } from './queue/queue.module';
 import { AuthModule } from './auth/auth.module';
 import { MarketDataModule } from './market-data/market-data.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { PersonalizationModule } from './personalization/personalization.module';
 
 import { RolesGuard } from './guards/roles.guard';
 
@@ -43,6 +45,12 @@ import { StellarEvent } from './stellar-monitor/entities/stellar-event.entity';
 import { WebhookConsumer } from './stellar-monitor/entities/webhook-consumer.entity';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { AnalyticsMetric } from './analytics/entities/analytics-metric.entity';
+import { AnalyticsAlert } from './analytics/entities/analytics-alert.entity';
+import { UserEvent } from './personalization/entities/user-event.entity';
+import { PersonalizationRule } from './personalization/entities/personalization-rule.entity';
+import { Experiment } from './personalization/entities/experiment.entity';
+import { ExperimentAssignment } from './personalization/entities/experiment-assignment.entity';
 
 
 @Module({
@@ -83,6 +91,11 @@ import { WebsocketModule } from './websocket/websocket.module';
             // Analytics entities
             AnalyticsMetric,
             AnalyticsAlert,
+            // Personalization entities
+            UserEvent,
+            PersonalizationRule,
+            Experiment,
+            ExperimentAssignment,
             // Stellar Monitor entities
             StellarEvent,
             WebhookConsumer,
@@ -115,6 +128,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     ThrottleModule,
     TenantModule,
     AnalyticsModule,
+    PersonalizationModule,
     BlockchainModule,
     WebsocketModule,
   ],
