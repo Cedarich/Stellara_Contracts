@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { Reflector } from '@nestjs/core';
 import { UserThrottlerGuard } from './common/guards/user-throttler.guard';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,6 +26,9 @@ async function bootstrap() {
 
   // Global middleware
   app.use(cookieParser());
+
+  // WebSocket adapter
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // CORS
   app.enableCors({
