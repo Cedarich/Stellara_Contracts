@@ -37,7 +37,10 @@ export class AuthController {
       throw new UnauthorizedException('Wallet address is required');
     }
     
-    const { accessToken, refreshToken, user } = await this.authService.login(body.walletAddress);
+    const { accessToken, refreshToken, user } = await this.authService.login(
+      body.walletAddress,
+      req,
+    );
 
     this.setCookies(res, accessToken, refreshToken);
 
@@ -70,7 +73,7 @@ export class AuthController {
       throw new UnauthorizedException('Refresh token not found');
     }
 
-    const tokens = await this.authService.refreshTokens(refreshToken);
+    const tokens = await this.authService.refreshTokens(refreshToken, req);
     this.setCookies(res, tokens.accessToken, tokens.refreshToken);
 
     return { message: 'Tokens refreshed successfully', ...tokens };
@@ -95,7 +98,7 @@ export class AuthController {
     const accessToken = req.cookies['access_token'] || req.headers.authorization?.split(' ')[1];
     
     if (accessToken) {
-      await this.authService.logout(user.id, accessToken);
+      await this.authService.logout(user.id, accessToken, user.sessionId);
     }
     
     res.clearCookie('access_token');
