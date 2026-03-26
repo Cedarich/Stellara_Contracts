@@ -160,11 +160,57 @@ model ProcessedEvent {
   contractId      String   @map("contract_id")
   eventType       String   @map("event_type")
   transactionHash String   @map("transaction_hash")
+  contractType    String?  @map("contract_type")
+  decodedData     Json?    @map("decoded_data")
+  abiVersion      String?  @map("abi_version")
   processedAt     DateTime @default(now()) @map("processed_at")
 
   @@index([network, ledgerSeq])
   @@index([contractId, eventType])
   @@map("processed_events")
+}
+
+model ContractAbiRegistry {
+  id                  String               @id @default(uuid())
+  contractAddress     String               @unique @map("contract_address")
+  contractType        String               @map("contract_type")
+  displayName         String               @map("display_name")
+  network             String               @default("stellar")
+  description         String?
+  status              AbiRegistryStatus    @default(ACTIVE)
+  currentVersion      String?              @map("current_version")
+  metadata            Json?
+  createdBy           String?              @map("created_by")
+  updatedBy           String?              @map("updated_by")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  versions            ContractAbiVersion[]
+
+  @@index([contractType, network])
+  @@index([status, updatedAt])
+  @@map("contract_abi_registries")
+}
+
+model ContractAbiVersion {
+  id                String              @id @default(uuid())
+  registryId        String              @map("registry_id")
+  registry          ContractAbiRegistry @relation(fields: [registryId], references: [id], onDelete: Cascade)
+  version           String
+  isCurrent         Boolean             @default(false) @map("is_current")
+  isDeprecated      Boolean             @default(false) @map("is_deprecated")
+  abiSchema         Json                @map("abi_schema")
+  contractSchema    Json                @map("contract_schema")
+  functionSchemas   Json                @map("function_schemas")
+  eventSchemas      Json                @map("event_schemas")
+  changelog         String?
+  compatibility     Json?
+  createdBy         String?             @map("created_by")
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  @@unique([registryId, version])
+  @@index([registryId, isCurrent])
+  @@index([version])
+  @@map("contract_abi_versions")
 }
 
 model IndexerLog {
@@ -664,4 +710,10 @@ enum WebhookDeliveryStatus {
   RETRYING
   DELIVERED
   FAILED
+}
+
+enum AbiRegistryStatus {
+  ACTIVE
+  DEPRECATED
+  ARCHIVED
 }

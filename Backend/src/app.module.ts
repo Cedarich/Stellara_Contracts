@@ -25,6 +25,7 @@ import { UserController } from './user.controller';
 import { PrismaModule } from './prisma.module';
 import { RabbitmqModule } from './messaging/rabbitmq/rabbitmq.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { AbiRegistryModule } from './abi-registry/abi-registry.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     TenantModule,
     WebhooksModule,
     RabbitmqModule,
+    AbiRegistryModule,
   ],
   controllers: [AppController, UserController, DocsController],
   providers: [AppService],
