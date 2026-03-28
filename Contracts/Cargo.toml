@@ -1,22 +1,24 @@
 [workspace]
 members = [
-    "contracts/token",
     "contracts/trading",
     "contracts/social_rewards",
+    "contracts/messaging",
     "contracts/academy",
     "contracts/academy-rewards",
-    "contracts/privacy_token",
-    "contracts/privacy_trading",
-    # "contracts/staking",         # TODO: Fix compilation errors
-    # "contracts/yield_farming",   # TODO: Fix compilation errors
-    # "contracts/reward_distributor", # TODO: Fix compilation errors
-    # "contracts/governance_token",   # TODO: Fix compilation errors
+
+    "integration-tests",
     "shared",
 ]
 resolver = "2"
 
 [profile.release]
 opt-level = "z"
+overflow-checks = true
 lto = true
 codegen-units = 1
 strip = true
+
+[workspace.dependencies]
+# Pin arbitrary to a version compatible with stellar-xdr 20.1.0
+# arbitrary >= 1.4.0 removed try_size_hint which stellar-xdr depends on
+arbitrary = "=1.3.2"

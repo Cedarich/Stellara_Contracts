@@ -1,132 +1,151 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { AbiRegistryModule } from './abi-registry/abi-registry.module';
+import { ExperimentsModule } from './experiments/experiments.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { KycModule } from './kyc/kyc.module';
 
+import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
-// logging and error handling
-import { LoggingModule } from './logging/logging.module';
-import { StructuredLogger } from './logging/structured-logger.service';
-
-import { RedisModule } from './redis/redis.module';
-import { VoiceModule } from './voice/voice.module';
-// DatabaseModule removed - using PostgreSQL config in this module instead
-import { StellarMonitorModule } from './stellar-monitor/stellar-monitor.module';
-import { WorkflowModule } from './workflow/workflow.module';
-import { QueueModule } from './queue/queue.module';
-import { AuthModule } from './auth/auth.module';
-import { MarketDataModule } from './market-data/market-data.module';
-
-import { RolesGuard } from './guards/roles.guard';
-
-import { Workflow } from './workflow/entities/workflow.entity';
-import { WorkflowStep } from './workflow/entities/workflow-step.entity';
-import { User } from './auth/entities/user.entity';
-import { WalletBinding } from './auth/entities/wallet-binding.entity';
-import { LoginNonce } from './auth/entities/login-nonce.entity';
-import { RefreshToken } from './auth/entities/refresh-token.entity';
-import { ApiToken } from './auth/entities/api-token.entity';
 import { AuditModule } from './audit/audit.module';
-import { AuditLog } from './audit/audit.entity';
-import { GdprModule } from './gdpr/gdpr.module';
-import { Consent } from './gdpr/entities/consent.entity';
-import { VoiceJob } from './voice/entities/voice-job.entity';
-import { ThrottleModule } from './throttle/throttle.module';
-import { ContractInteractionModule } from './contract-interaction/contract-interaction.module';
-import { TransactionRecord } from './contract-interaction/entities/transaction-record.entity';
-import { ContractMetadata } from './contract-interaction/entities/contract-metadata.entity';
-import { SearchModule } from './search/search.module';
-import { AdminModule } from './admin/admin.module';
-import { DataExportModule } from './data-export/data-export.module';
-import { ExportJob } from './data-export/entities/export-job.entity';
-import { ComplianceModule } from './compliance/compliance.module';
-import { KycVerification } from './compliance/entities/kyc-verification.entity';
-import { ComplianceReport } from './compliance/entities/compliance-report.entity';
-import { SanctionsCheck } from './compliance/entities/sanctions-check.entity';
-import { RiskAssessment } from './compliance/entities/risk-assessment.entity';
+import { AuthModule } from './auth/auth.module';
+import { WebsocketModule } from './websocket/websocket.module';
+import { PaymentModule } from './payment/payment.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { BackupModule } from './backup/backup.module';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database.module';
+import { DocsController } from './docs/docs.controller';
+import { ErrorHandlingModule } from './common/error-handling.module';
+import { IndexAnalysisModule } from './index-analysis/index-analysis.module';
+import { LifecycleModule } from './lifecycle/lifecycle.module';
+import { LoggingModule } from './logging/logging.module';
+import { Module } from '@nestjs/common';
+import { FraudModule } from './fraud/fraud.module';
+import { PrismaModule } from './prisma.module';
+import { QuotaModule } from './quota/quota.module';
+import { RabbitmqModule } from './messaging/rabbitmq/rabbitmq.module';
+import { RateLimitModule } from './rate-limiting/rate-limit.module';
+import { RedisModule } from './redis/redis.module';
+import { ReputationModule } from './reputation/reputation.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SessionModule } from './sessions/session.module';
+import { TenantModule } from './tenant/tenant.module';
+import { UserController } from './user.controller';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { validateEnv } from './config/env.validation';
+import { CollateralModule } from './collateral/collateral.module';
+import { GeolocationModule } from './geolocation/geolocation.module';
+
+import { SupportModule } from './support/support.module';
+import { MultisigModule } from './multisig/multisig.module';
+
+import { VestingModule } from './vesting/vesting.module';
+import { LiquidityMiningModule } from './liquidity-mining/liquidity-mining.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
+import { GraphqlModule } from './graphql/graphql.module';
+import { ObjectStorageModule } from './object-storage/object-storage.module';
+import { ZkModule } from './zk/zk.module';
+import { FailoverModule } from './failover/failover.module';
+import { IdentityModule } from './identity/identity.module';
+import { ClearingModule } from './clearing/clearing.module';
+import { CostMonitoringModule } from './cost-monitoring/cost-monitoring.module';
+import { CircuitBreakerModule } from './circuit-breaker/circuit-breaker.module';
+import { DataRetentionModule } from './data-retention/data-retention.module';
+import { DocumentProcessingModule } from './document-processing/document.module';
+import { DataResidencyModule } from './data-residency/data-residency.module';
+import { PredictiveMaintenanceModule } from './predictive-maintenance/predictive-maintenance.module';
+import { SecretsManagementModule } from './secrets-management/secrets-management.module';
+import { TransactionQueueModule } from './transaction-queue/transaction-queue.module';
+import { LiquidityAggregationModule } from './liquidity-aggregation/liquidity-aggregation.module';
+import { CrossChainSwapModule } from './cross-chain-swap/cross-chain-swap.module';
 
 
 @Module({
   imports: [
-    // logging comes first so correlation middleware wraps every request
-    LoggingModule,
-
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
+      validate: validateEnv,
     }),
-
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST') || 'localhost',
-        port: configService.get('DB_PORT') || 5432,
-        username: configService.get('DB_USERNAME') || 'postgres',
-        password: configService.get('DB_PASSWORD') || 'password',
-        database:
-          configService.get('DB_DATABASE') || 'stellara_workflows',
-        entities: [
-          Workflow,
-          WorkflowStep,
-          User,
-          WalletBinding,
-          LoginNonce,
-          RefreshToken,
-          ApiToken,
-          AuditLog,
-          Consent,
-          VoiceJob,
-          TransactionRecord,
-          ContractMetadata,
-          ExportJob,
-          KycVerification,
-          ComplianceReport,
-          SanctionsCheck,
-          RiskAssessment,
-        ],
-        synchronize: configService.get('NODE_ENV') === 'development',
-        logging: configService.get('NODE_ENV') === 'development',
-      }),
+    ScheduleModule.forRoot(),
+    // Structured logging with correlation IDs and performance tracing
+    LoggingModule.forRoot({
+      enableRequestLogging: true,
+      enablePerformanceTracing: true,
+      defaultContext: 'Application',
     }),
-
-    RedisModule,
-    AuthModule,
-    VoiceModule,
-    StellarMonitorModule,
-    WorkflowModule,
-    QueueModule,
-    MarketDataModule,
+    // Global rate limiting with Redis storage
+    ThrottlerModule.forRootAsync({
+      useFactory: () =>
+        ({
+          ttl: 60, // time window in seconds
+          limit: 100, // default requests per window
+          storage: new ThrottlerStorageRedisService({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379', 10),
+            password: process.env.REDIS_PASSWORD || undefined,
+          }),
+        }) as never,
+    }),
+    // Error handling with global filters
+    ErrorHandlingModule,
+    // Comprehensive audit logging for compliance
     AuditModule,
-    GdprModule,
-    ThrottleModule,
-    ContractInteractionModule,
-    SearchModule,
+    ReputationModule,
+    RedisModule,
+    DatabaseModule,
+    PrismaModule,
+    LifecycleModule,
+    RateLimitModule,
+    SessionModule,
+    IndexAnalysisModule,
+    AuthModule,
+    WebsocketModule,
+    PaymentModule,
+    FraudModule,
+    // Backup and disaster recovery module
+    BackupModule,
+    QuotaModule,
     AdminModule,
-    DataExportModule,
-    ComplianceModule,
+    TenantModule,
+    WebhooksModule,
+    RabbitmqModule,
+    AbiRegistryModule,
+    SupportModule,
+    MultisigModule,
+
+    MonitoringModule,
+
+    AnalyticsModule,
+    ExperimentsModule,
+    KycModule,
+    CollateralModule,
+    GeolocationModule,
+    VestingModule,
+    LiquidityMiningModule,
+    MonitoringModule,
+    CircuitBreakerModule,
+    TransactionQueueModule,
+    DataRetentionModule,
+    GraphqlModule,
+    ObjectStorageModule,
+    ZkModule,
+    IdentityModule,
+    ClearingModule,
+    DocumentProcessingModule,
+    FailoverModule,
+    CostMonitoringModule,
+    DataResidencyModule,
+    PredictiveMaintenanceModule,
+    SecretsManagementModule,
+    LiquidityAggregationModule,
+    CrossChainSwapModule,
+    CollateralModule,
+    GeolocationModule,
+
   ],
-
-  controllers: [AppController],
-
-  providers: [
-    AppService,
-
-    /**
-     * Global RBAC enforcement
-     * Applies @Roles() checks across all controllers
-     */
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-    // replace the default Nest logger with our structured implementation
-    {
-      provide: Logger,
-      useClass: StructuredLogger,
-    },
-  ],
+  controllers: [AppController, UserController, DocsController],
+  providers: [AppService],
 })
 export class AppModule {}
